@@ -1,14 +1,15 @@
 -- =====================================================
--- CodeCraft — Ejecutar íntegramente en phpMyAdmin o consola MySQL
--- Usuario: burguillosdylan@gmail.com | Password: Admin@2026
+-- SecureAuth Enterprise — Base de Datos Actualizada
 -- =====================================================
 
-CREATE DATABASE IF NOT EXISTS codecraft_auth
+-- 1. Crear Base de Datos
+CREATE DATABASE IF NOT EXISTS enterprise_auth
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE codecraft_auth;
+USE enterprise_auth;
 
+-- 2. Tabla Usuarios
 CREATE TABLE IF NOT EXISTS users (
     id                      INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     company_name            VARCHAR(150)  NOT NULL,
@@ -24,11 +25,10 @@ CREATE TABLE IF NOT EXISTS users (
     locked_until            DATETIME      DEFAULT NULL,
     last_login              DATETIME      DEFAULT NULL,
     created_at              DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at              DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_email (email),
-    INDEX idx_active (is_active, is_verified)
+    INDEX idx_email (email)
 ) ENGINE=InnoDB;
 
+-- 3. Tabla Códigos OTP
 CREATE TABLE IF NOT EXISTS otp_codes (
     id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id    INT UNSIGNED NOT NULL,
@@ -39,9 +39,10 @@ CREATE TABLE IF NOT EXISTS otp_codes (
     expires_at DATETIME     NOT NULL,
     created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_purpose (user_id, purpose, is_used, expires_at),
-    CONSTRAINT fk_otp_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- 4. Tabla Auditoría
 CREATE TABLE IF NOT EXISTS audit_logs (
     id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id     INT UNSIGNED DEFAULT NULL,
@@ -52,10 +53,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     severity    ENUM('info','warning','critical') NOT NULL DEFAULT 'info',
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user (user_id),
-    INDEX idx_severity_time (severity, created_at),
-    CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- 5. Tabla Sesiones
 CREATE TABLE IF NOT EXISTS user_sessions (
     id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id        INT UNSIGNED NOT NULL,
@@ -66,25 +67,22 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     is_active      TINYINT(1)   NOT NULL DEFAULT 1,
     created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_token (session_token, is_active, expires_at),
-    CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- =====================================================
+-- 6. Insertar Usuario Administrador Establecido
+-- IMPORTANTE: El password 'Admin@2026' DEBE estar hasheado con BCRYPT
+-- Use PHP's password_verify() compatible hash.
+-- =====================================================
 INSERT INTO users (
-    company_name,
-    company_nit,
-    full_name,
-    email,
-    password,
-    role,
-    department,
-    is_verified,
-    is_active
+    company_name, company_nit, full_name, email, password, role, department, is_verified, is_active
 ) VALUES (
-    'CodeCraft',
+    'SecureAuth Enterprise',
     '900123456-1',
     'Dylan Burguillos',
     'burguillosdylan@gmail.com',
-    PASSWORD('Admin@2026'),
+    '$2y$12$gJTBj2JxRWmNwKrA86uHMe3zMchznL3MOY6SBUMugFjfW1aLDCAh6', -- Admin@2026 BCRYPT Hash
     'admin',
     'Tecnología',
     1,

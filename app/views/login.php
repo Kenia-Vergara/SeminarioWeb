@@ -1,53 +1,15 @@
-<?php
-require_once __DIR__ . '/debug.php';
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/core/Database.php';
-require_once __DIR__ . '/core/Session.php';
-require_once __DIR__ . '/core/Security.php';
-require_once __DIR__ . '/model/UserModel.php';
-require_once __DIR__ . '/model/OTPModel.php';
-require_once __DIR__ . '/model/AuditLogModel.php';
-require_once __DIR__ . '/model/UserSessionModel.php';
-require_once __DIR__ . '/service/EmailService.php';
-require_once __DIR__ . '/controller/AuthController.php';
-
-Security::headers();
-AppSession::start();
-error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
- $auth = new AuthController();
-
-/* Logout */
-if (($_GET['action'] ?? '') === 'logout') {
-    $auth->processLogout();
-    exit;
-}
-
-/* POST: procesar login */
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $auth->processLogin();
-    exit;
-}
-
-/* GET: mostrar formulario */
- $auth->showLogin();
-
- $csrf         = Security::generateCSRF();
- $flashError   = AppSession::getFlash('error');
- $flashSuccess = AppSession::getFlash('success');
- $remaining    = Security::rateLimitRemaining('login', MAX_LOGIN_ATTEMPTS, 300);
-?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeCraft — Iniciar sesión</title>
+    <title><?= APP_NAME ?> — Iniciar sesión</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style><?php include __DIR__ . '/views/partials/styles.php'; ?>
-    html,body{height:100%;overflow:hidden}
-    #particleCanvas{pointer-events:none}
+    <style>
+        <?php include __DIR__ . '/partials/styles.php'; ?>
+        html, body { height: 100%; overflow: hidden; }
+        #particleCanvas { pointer-events: none; }
     </style>
 </head>
 <body>
@@ -63,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="position:relative;z-index:1">
                 <div style="display:flex;align-items:center;gap:14px;margin-bottom:48px">
                     <div style="width:48px;height:48px;background:linear-gradient(135deg,#f97316,#c2410c);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;box-shadow:0 4px 24px rgba(249,115,22,.3)"><i class="fa-solid fa-code"></i></div>
-                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:var(--fg)">CodeCraft</div>
+                    <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:var(--fg)"><?= APP_NAME ?></div>
                 </div>
                 <h2 style="font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;line-height:1.25;color:var(--fg);margin-bottom:16px">Plataforma de<br><span style="background:linear-gradient(135deg,#f97316,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Gestión Empresarial</span></h2>
                 <p style="font-size:14.5px;line-height:1.7;color:var(--fg-muted);max-width:280px">Accede a tu espacio de trabajo centralizado. Monitorea proyectos, equipos y métricas en tiempo real.</p>
@@ -81,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p style="font-size:14px;color:var(--fg-muted)">Ingresa tus credenciales para acceder al sistema</p>
             </header>
 
-            <form method="POST" action="login.php" novalidate autocomplete="on">
-                <?= Security::csrfField() ?>
+            <form method="POST" action="?action=login" novalidate autocomplete="on">
+                <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
 
                 <div class="field-group">
                     <label class="field-label" for="email">Correo electrónico</label>
@@ -99,47 +61,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input type="password" id="password" name="password" class="field-input" placeholder="Ingresa tu contraseña" autocomplete="current-password" required style="padding-right:48px">
                         <button type="button" class="toggle-password" aria-label="Mostrar contraseña"><i class="fa-regular fa-eye"></i></button>
                     </div>
-                    <div class="pw-rules" id="pwRules">
-                        <div class="pw-rule" data-rule="length"><span class="pw-rule-icon"><i class="fa-solid fa-check"></i></span><span>8 caracteres mínimo</span></div>
-                        <div class="pw-rule" data-rule="upper"><span class="pw-rule-icon"><i class="fa-solid fa-check"></i></span><span>Una mayúscula</span></div>
-                        <div class="pw-rule" data-rule="lower"><span class="pw-rule-icon"><i class="fa-solid fa-check"></i></span><span>Una minúscula</span></div>
-                        <div class="pw-rule" data-rule="number"><span class="pw-rule-icon"><i class="fa-solid fa-check"></i></span><span>Un número</span></div>
-                        <div class="pw-rule" data-rule="special"><span class="pw-rule-icon"><i class="fa-solid fa-check"></i></span><span>Un carácter especial</span></div>
-                    </div>
-                    <div class="str-wrap" id="strWrap">
-                        <div class="str-track"><div class="str-fill" id="strFill"></div></div>
-                        <span class="str-label" id="strLabel">—</span>
-                    </div>
-                </div>
-
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-                    <label class="chk-wrap"><input type="checkbox" name="remember"><span class="chk-box"><i class="fa-solid fa-check"></i></span><span>Recordar sesión</span></label>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-full" style="height:52px;font-size:15px"><span class="btn-text">Acceder al sistema</span><div class="spinner"></div></button>
             </form>
 
             <div class="divider"><span>O</span></div>
-            <p style="text-align:center;font-size:13.5px;color:var(--fg-muted)">No tienes una cuenta? <a href="register.php" class="link" style="font-weight:600">Solicitar acceso</a></p>
+            <p style="text-align:center;font-size:13.5px;color:var(--fg-muted)">¿No tienes una cuenta? <a href="?action=register" class="link" style="font-weight:600">Solicitar acceso</a></p>
         </section>
     </div>
 
     <script>
-    /* Partículas */
     !function(){const c=document.getElementById('particleCanvas'),x=c.getContext('2d');let p=[],a,w,h;function r(){w=c.width=innerWidth;h=c.height=innerHeight}r();addEventListener('resize',r);for(let i=0;i<Math.min(50,w*h/30000);i++)p.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,s:Math.random()*1.2+.4,o:Math.random()*.18+.05});let m={x:-1e3,y:-1e3};addEventListener('mousemove',e=>{m.x=e.clientX;m.y=e.clientY});!function d(){x.clearRect(0,0,w,h);for(let i=0;i<p.length;i++){const q=p[i];q.x+=q.vx;q.y+=q.vy;if(q.x<0||q.x>w)q.vx*=-1;if(q.y<0||q.y>h)q.vy*=-1;x.beginPath();x.arc(q.x,q.y,Math.max(.1,q.s),0,6.28);x.fillStyle=`rgba(249,115,22,${q.o})`;x.fill();for(let j=i+1;j<p.length;j++){const k=p[j],dx=q.x-k.x,dy=q.y-k.y,dd=Math.sqrt(dx*dx+dy*dy);if(dd<130){x.beginPath();x.moveTo(q.x,q.y);x.lineTo(k.x,k.y);x.strokeStyle=`rgba(249,115,22,${(1-dd/130)*.05})`;x.lineWidth=.5;x.stroke()}}const dx=q.x-m.x,dy=q.y-m.y,dd=Math.sqrt(dx*dx+dy*dy);if(dd<100){const f=(1-dd/100)*.012;q.vx+=dx*f;q.vy+=dy*f}const sp=Math.sqrt(q.vx*q.vx+q.vy*q.vy);if(sp>.7){q.vx*=.98;q.vy*=.98}}a=requestAnimationFrame(d)}()}();
 
-    /* Toast */
     function toast(t,ti,m){const ic={success:'fa-check',error:'fa-xmark',warning:'fa-exclamation',info:'fa-info'},e=document.createElement('div');e.className=`toast toast-${t}`;e.innerHTML=`<div class="toast-icon"><i class="fa-solid ${ic[t]}"></i></div><div class="toast-content"><div class="toast-title">${ti}</div><div class="toast-message">${m}</div></div><button class="toast-close"><i class="fa-solid fa-xmark"></i></button>`;const rm=()=>{e.classList.add('removing');setTimeout(()=>e.remove(),300)};e.querySelector('.toast-close').onclick=rm;setTimeout(rm,6000);document.getElementById('toastBox').appendChild(e)}
-    <?php if($flashError): ?>toast('error','Error','<?= addslashes($flashError) ?>');<?php endif; ?>
-    <?php if($flashSuccess): ?>toast('success','Éxito','<?= addslashes($flashSuccess) ?>');<?php endif; ?>
+    <?php $error = AppSession::getFlash('error'); if($error): ?>toast('error','Error','<?= addslashes($error) ?>');<?php endif; ?>
+    <?php $success = AppSession::getFlash('success'); if($success): ?>toast('success','Éxito','<?= addslashes($success) ?>');<?php endif; ?>
 
-    /* Toggle password */
     document.querySelector('.toggle-password').addEventListener('click',function(){const i=this.querySelector('i'),inp=this.parentElement.querySelector('input');if(inp.type==='password'){inp.type='text';i.classList.replace('fa-eye','fa-eye-slash')}else{inp.type='password';i.classList.replace('fa-eye-slash','fa-eye')}});
-
-    /* Password rules */
-    const pw=document.getElementById('password'),rules=document.getElementById('pwRules'),sw=document.getElementById('strWrap'),sf=document.getElementById('strFill'),sl=document.getElementById('strLabel');
-    const R={length:p=>p.length>=8,upper:p=>/[A-Z]/.test(p),lower:p=>/[a-z]/.test(p),number:p=>/[0-9]/.test(p),special:p=>/[^A-Za-z0-9]/.test(p)};
-    pw.addEventListener('input',()=>{const v=pw.value,has=v.length>0;rules.classList.toggle('visible',has);sw.classList.toggle('visible',has);let n=0;for(const[k,t]of Object.entries(R)){const ok=has&&t(v),el=rules.querySelector(`[data-rule="${k}"]`);if(el)el.classList.toggle('pass',ok);if(ok)n++}const pct=Math.round(n/5*100);sf.style.width=pct+'%';if(pct<=20){sf.style.background='#ef4444';sl.textContent='Débil';sl.style.color='#ef4444'}else if(pct<=40){sf.style.background='#f59e0b';sl.textContent='Regular';sl.style.color='#f59e0b'}else if(pct<=60){sf.style.background='#f97316';sl.textContent='Buena';sl.style.color='#f97316'}else if(pct<=80){sf.style.background='linear-gradient(90deg,#f97316,#fb923c)';sl.textContent='Muy buena';sl.style.color='#fb923c'}else{sf.style.background='linear-gradient(90deg,#22c55e,#4ade80)';sl.textContent='Excelente';sl.style.color='#22c55e'}});
     </script>
 </body>
 </html>
