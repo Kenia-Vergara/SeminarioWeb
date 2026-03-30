@@ -1,0 +1,127 @@
+<?php
+require_once __DIR__ . '/debug.php';
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/core/Database.php';
+require_once __DIR__ . '/core/Session.php';
+require_once __DIR__ . '/core/Security.php';
+require_once __DIR__ . '/model/UserModel.php';
+require_once __DIR__ . '/model/OTPModel.php';
+require_once __DIR__ . '/model/AuditLogModel.php';
+require_once __DIR__ . '/model/UserSessionModel.php';
+require_once __DIR__ . '/service/EmailService.php';
+require_once __DIR__ . '/controller/AuthController.php';
+
+Security::headers();
+AppSession::start();
+
+ $auth = new AuthController();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $auth->processRegister();
+    exit;
+}
+
+ $auth->showRegister();
+
+ $csrf       = Security::generateCSRF();
+ $flashError = AppSession::getFlash('error');
+ $formErrors = AppSession::get('form_errors', []);
+ $formData   = AppSession::get('form_data', []);
+AppSession::remove('form_errors');
+AppSession::remove('form_data');
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeCraft — Crear cuenta</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style><?php include __DIR__ . '/views/partials/styles.php'; ?>
+    html,body{height:100%;overflow-y:auto}
+    </style>
+</head>
+<body>
+    <div class="bg-layer" aria-hidden="true"><div class="grid-pattern"></div><canvas id="particleCanvas"></canvas></div>
+    <div class="toast-container" id="toastBox"></div>
+
+    <div class="card" style="max-width:560px;width:95vw;margin:auto;padding:44px;position:relative;z-index:10">
+        <header style="text-align:center;margin-bottom:32px">
+            <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.03));border:1px solid rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--accent);margin:0 auto 20px"><i class="fa-solid fa-user-plus"></i></div>
+            <h1 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--fg);margin-bottom:8px">Crear cuenta</h1>
+            <p style="font-size:14px;color:var(--fg-muted)">Completa el formulario para solicitar acceso a la plataforma</p>
+        </header>
+
+        <?php if ($formErrors): ?>
+        <div style="background:var(--error-glow);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px">
+            <?php foreach ($formErrors as $err): ?>
+            <p style="font-size:12.5px;color:var(--error);margin-bottom:4px"><i class="fa-solid fa-circle-exclamation" style="margin-right:6px"></i><?= Security::sanitize($err) ?></p>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <form method="POST" action="register.php" novalidate>
+            <?= Security::csrfField() ?>
+
+            <div class="form-row">
+                <div class="field-group">
+                    <label class="field-label" for="company_name">Razón social</label>
+                    <div class="field-wrapper"><i class="fa-solid fa-building field-icon"></i>
+                    <input type="text" id="company_name" name="company_name" class="field-input" placeholder="Empresa S.A.S" value="<?= htmlspecialchars($formData['company_name'] ?? '') ?>" required></div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="company_nit">NIT</label>
+                    <div class="field-wrapper"><i class="fa-solid fa-hashtag field-icon"></i>
+                    <input type="text" id="company_nit" name="company_nit" class="field-input" placeholder="900123456-1" value="<?= htmlspecialchars($formData['company_nit'] ?? '') ?>" required></div>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="full_name">Nombre completo</label>
+                <div class="field-wrapper"><i class="fa-solid fa-user field-icon"></i>
+                <input type="text" id="full_name" name="full_name" class="field-input" placeholder="Carlos Andrés Mendoza" value="<?= htmlspecialchars($formData['full_name'] ?? '') ?>" required></div>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="reg_email">Correo electrónico</label>
+                <div class="field-wrapper"><i class="fa-regular fa-envelope field-icon"></i>
+                <input type="email" id="reg_email" name="email" class="field-input" placeholder="usuario@empresa.com" value="<?= htmlspecialchars($formData['email'] ?? '') ?>" required></div>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="department">Departamento</label>
+                <div class="field-wrapper"><i class="fa-solid fa-sitemap field-icon"></i>
+                <input type="text" id="department" name="department" class="field-input" placeholder="Tecnología, Finanzas, RH..." value="<?= htmlspecialchars($formData['department'] ?? '') ?>" required></div>
+            </div>
+
+            <div class="form-row">
+                <div class="field-group">
+                    <label class="field-label" for="reg_password">Contraseña</label>
+                    <div class="field-wrapper"><i class="fa-solid fa-key field-icon"></i>
+                    <input type="password" id="reg_password" name="password" class="field-input" placeholder="Mínimo 8 caracteres" required style="padding-right:48px">
+                    <button type="button" class="toggle-password" data-target="reg_password" aria-label="Mostrar contraseña"><i class="fa-regular fa-eye"></i></button></div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="confirm_password">Confirmar contraseña</label>
+                    <div class="field-wrapper"><i class="fa-solid fa-key field-icon"></i>
+                    <input type="password" id="confirm_password" name="confirm_password" class="field-input" placeholder="Repetir contraseña" required></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="height:52px;font-size:15px;margin-top:8px"><span class="btn-text">Crear cuenta</span><div class="spinner"></div></button>
+        </form>
+
+        <div class="divider"><span>O</span></div>
+        <p style="text-align:center;font-size:13.5px;color:var(--fg-muted)">Ya tienes una cuenta? <a href="login.php" class="link" style="font-weight:600">Iniciar sesión</a></p>
+    </div>
+
+    <script>
+    !function(){const c=document.getElementById('particleCanvas'),x=c.getContext('2d');let p=[];function r(){c.width=innerWidth;c.height=innerHeight}r();addEventListener('resize',r);for(let i=0;i<40;i++)p.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,s:Math.random()*1.2+.4,o:Math.random()*.15+.04});!function d(){x.clearRect(0,0,c.width,c.height);for(let i=0;i<p.length;i++){const q=p[i];q.x+=q.vx;q.y+=q.vy;if(q.x<0||q.x>c.width)q.vx*=-1;if(q.y<0||q.y>c.height)q.vy*=-1;x.beginPath();x.arc(q.x,q.y,Math.max(.1,q.s),0,6.28);x.fillStyle=`rgba(249,115,22,${q.o})`;x.fill()}requestAnimationFrame(d)}()}();
+    function toast(t,ti,m){const ic={success:'fa-check',error:'fa-xmark',warning:'fa-exclamation',info:'fa-info'},e=document.createElement('div');e.className=`toast toast-${t}`;e.innerHTML=`<div class="toast-icon"><i class="fa-solid ${ic[t]}"></i></div><div class="toast-content"><div class="toast-title">${ti}</div><div class="toast-message">${m}</div></div><button class="toast-close"><i class="fa-solid fa-xmark"></i></button>`;const rm=()=>{e.classList.add('removing');setTimeout(()=>e.remove(),300)};e.querySelector('.toast-close').onclick=rm;setTimeout(rm,6000);document.getElementById('toastBox').appendChild(e)}
+    <?php if($flashError): ?>toast('error','Error','<?= addslashes($flashError) ?>');<?php endif; ?>
+    document.querySelectorAll('.toggle-password').forEach(btn=>{btn.addEventListener('click',function(){const i=this.querySelector('i'),tid=this.dataset.target;if(!tid)return;const inp=document.getElementById(tid);if(inp.type==='password'){inp.type='text';i.classList.replace('fa-eye','fa-eye-slash')}else{inp.type='password';i.classList.replace('fa-eye-slash','fa-eye')}})});
+    </script>
+</body>
+</html>

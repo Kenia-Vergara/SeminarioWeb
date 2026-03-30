@@ -1,0 +1,7 @@
+{
+    "name": "codecraft/auth",
+    "description": "Sistema de autenticación empresarial",
+    "require": {
+        "phpmailer/phpmailer": "^6.9"
+    }
+}
