@@ -50,11 +50,11 @@ class EmailService {
         };
         return "<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body style='margin:0;padding:0;background:#060B18;font-family:system-ui,sans-serif'>
 <table width='100%' cellpadding='0' cellspacing='0' style='max-width:560px;margin:40px auto;background:#111827;border-radius:12px;overflow:hidden;border:1px solid #1E293B'>
-<tr><td style='padding:28px;background:linear-gradient(135deg,#0D1425,#162038);text-align:center'><h1 style='margin:0;color:#00D4AA;font-size:22px;font-weight:700'>SecureAuth Enterprise</h1></td></tr>
+<tr><td style='padding:28px;background:linear-gradient(135deg,#0D1425,#162038);text-align:center'><h1 style='margin:0;color:#A855F7;font-size:22px;font-weight:700'>SecureAuth Enterprise</h1></td></tr>
 <tr><td style='padding:28px'><p style='color:#E2E8F0;font-size:15px;margin:0 0 6px'>Hola, <strong>{$name}</strong></p>
 <p style='color:#94A3B8;font-size:13px;margin:0 0 20px'>Usa este código para {$txt}. Expira en 5 minutos.</p>
-<div style='background:#0A0F1E;border:2px dashed #00D4AA;border-radius:8px;padding:18px;text-align:center;margin:20px 0'>
-<span style='color:#00D4AA;font-size:34px;font-weight:700;letter-spacing:8px;font-family:monospace'>{$code}</span></div>
+<div style='background:#0A0F1E;border:2px dashed #A855F7;border-radius:8px;padding:18px;text-align:center;margin:20px 0'>
+<span style='color:#A855F7;font-size:34px;font-weight:700;letter-spacing:8px;font-family:monospace'>{$code}</span></div>
 <p style='color:#475569;font-size:11px;margin:0'>Si no solicitaste esto, ignora este correo.</p></td></tr>
 <tr><td style='padding:14px 28px;background:#0D1425;text-align:center'><p style='color:#475569;font-size:10px;margin:0'>&copy; " . date('Y') . " SecureAuth Enterprise</p></td></tr></table></body></html>";
     }
