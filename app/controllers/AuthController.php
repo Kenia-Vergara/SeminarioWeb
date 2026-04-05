@@ -202,11 +202,14 @@ class AuthController {
         }
         if ($mode === 'verification') {
             $this->um->setVerified((int)$uid, true);
+            $this->alm->log((int)$uid, 'ACCOUNT_VERIFIED', 'Cuenta verificada exitosamente', 'info');
             AppSession::remove('pending_verify_id');
-            AppSession::setFlash('success', 'Cuenta verificada.');
+            AppSession::setFlash('success', 'Cuenta verificada. Ya puede iniciar sesión.');
             header('Location:?action=login');
             exit;
         }
+        // Login 2FA exitoso — registrar en auditoría ANTES de crear sesión
+        $this->alm->log((int)$uid, 'LOGIN_SUCCESS', 'Inicio de sesión exitoso vía OTP 2FA', 'info');
         $this->um->updateLastLogin((int)$uid);
         $token = Security::generateToken();
         $this->sm->create((int)$uid, $token);
@@ -219,7 +222,13 @@ class AuthController {
 
     public function logout(): void {
         $token = AppSession::get('session_token');
-        if ($token) $this->sm->deactivate($token);
+        if ($token) {
+            $user = $this->sm->validate($token);
+            if ($user) {
+                $this->alm->log((int)$user['user_id'], 'LOGOUT', 'Sesión cerrada correctamente', 'info');
+            }
+            $this->sm->deactivate($token);
+        }
         AppSession::destroy();
         header('Location:?action=login');
         exit;

@@ -1,5 +1,5 @@
 -- =====================================================
--- SecureAuth Enterprise — Base de Datos Actualizada
+-- Apex Solutions — Base de Datos
 -- =====================================================
 
 -- 1. Crear Base de Datos
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 INSERT INTO users (
     company_name, company_nit, full_name, email, password, role, department, is_verified, is_active
 ) VALUES (
-    'SecureAuth Enterprise',
+    'Apex Solutions',
     '900123456-1',
     'Dylan Burguillos',
     'burguillosdylan@gmail.com',

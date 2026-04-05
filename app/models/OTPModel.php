@@ -28,14 +28,19 @@ class OTPModel {
         if (!$row) {
             return ['ok' => false, 'err' => 'No hay código activo. Solicite uno nuevo.'];
         }
-        $this->db->prepare("UPDATE otp_codes SET attempts=attempts+1 WHERE id=?")->execute([$row['id']]);
-        if ((int)$row['attempts'] + 1 >= OTP_MAX_ATTEMPTS) {
-            $this->db->prepare("UPDATE otp_codes SET is_used=1 WHERE id=?")->execute([$row['id']]);
-            return ['ok' => false, 'err' => 'Máximo de intentos alcanzado. Solicite un nuevo código.'];
-        }
+        // Verificar el código PRIMERO antes de contar intentos
         if (!hash_equals($row['code'], $code)) {
-            return ['ok' => false, 'err' => 'Código incorrecto.'];
+            // Incrementar intentos solo cuando el código es incorrecto
+            $this->db->prepare("UPDATE otp_codes SET attempts=attempts+1 WHERE id=?")->execute([$row['id']]);
+            $newAttempts = (int)$row['attempts'] + 1;
+            if ($newAttempts >= OTP_MAX_ATTEMPTS) {
+                $this->db->prepare("UPDATE otp_codes SET is_used=1 WHERE id=?")->execute([$row['id']]);
+                return ['ok' => false, 'err' => 'Máximo de intentos alcanzado. Solicite un nuevo código.'];
+            }
+            $rem = OTP_MAX_ATTEMPTS - $newAttempts;
+            return ['ok' => false, 'err' => "Código incorrecto. {$rem} intento(s) restante(s)."];
         }
+        // Código correcto: marcar como usado
         $this->db->prepare("UPDATE otp_codes SET is_used=1 WHERE id=?")->execute([$row['id']]);
         return ['ok' => true, 'err' => null];
     }
