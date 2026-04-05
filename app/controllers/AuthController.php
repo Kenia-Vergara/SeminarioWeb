@@ -201,11 +201,19 @@ class AuthController {
             exit;
         }
         if ($mode === 'verification') {
+            // Marcar cuenta como verificada
             $this->um->setVerified((int)$uid, true);
-            $this->alm->log((int)$uid, 'ACCOUNT_VERIFIED', 'Cuenta verificada exitosamente', 'info');
+            $this->alm->log((int)$uid, 'ACCOUNT_VERIFIED', 'Cuenta verificada y sesión iniciada automáticamente', 'info');
+            // Crear sesión automáticamente — el usuario no debe volver a loguearse
+            $this->um->updateLastLogin((int)$uid);
+            $token = Security::generateToken();
+            $this->sm->create((int)$uid, $token);
+            AppSession::set('session_token', $token);
             AppSession::remove('pending_verify_id');
-            AppSession::setFlash('success', 'Cuenta verificada. Ya puede iniciar sesión.');
-            header('Location:?action=login');
+            AppSession::regenerate();
+            $this->alm->log((int)$uid, 'LOGIN_SUCCESS', 'Inicio de sesión automático tras verificación de cuenta', 'info');
+            AppSession::setFlash('success', '¡Bienvenido! Tu cuenta ha sido verificada exitosamente.');
+            header('Location:?action=dashboard');
             exit;
         }
         // Login 2FA exitoso — registrar en auditoría ANTES de crear sesión
