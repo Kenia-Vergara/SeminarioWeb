@@ -30,11 +30,12 @@ class Security {
     }
 
     public static function clientIP(): string {
-        // CORRECCIÓN: Evitar "Notice: Undefined index" si el campo no existe en $_SERVER
         $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
-        return $forwarded
+        $ip = $forwarded
             ? trim(explode(',', $forwarded)[0])
             : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        // Normalizar loopback IPv6 → IPv4 legible
+        return $ip === '::1' ? '127.0.0.1' : $ip;
     }
 
     public static function userAgent(): string {

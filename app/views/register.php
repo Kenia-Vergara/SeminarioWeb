@@ -19,8 +19,58 @@
             position: relative;
             z-index: 10;
         }
-        .card { max-width: 620px; width: 100%; }
-        @media (max-width: 560px) { .form-row { grid-template-columns: 1fr; } }
+        .card { max-width: 460px; width: 100%; }
+
+        /* ── Requisitos de contraseña ── */
+        .pw-rules {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+        }
+        .pw-rule {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: var(--fg-dim);
+            transition: color 0.25s;
+        }
+        .pw-rule i {
+            font-size: 11px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--dash-border);
+            color: var(--fg-dim);
+            flex-shrink: 0;
+            transition: all 0.25s;
+        }
+        .pw-rule.ok { color: #4ADE80; }
+        .pw-rule.ok i {
+            background: rgba(34,197,94,0.15);
+            border-color: rgba(34,197,94,0.4);
+            color: #4ADE80;
+        }
+
+        /* Barra fortaleza */
+        .strength-track {
+            height: 4px;
+            background: var(--dash-border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .strength-fill {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: width 0.35s ease, background 0.35s ease;
+        }
     </style>
 </head>
 <body>
@@ -46,62 +96,65 @@
             <form method="POST" action="?action=register" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
 
-                <div class="form-row">
-                    <div class="field-group">
-                        <label class="field-label" for="company_name">Empresa</label>
-                        <input type="text" id="company_name" name="company_name" class="field-input"
-                            placeholder="Nombre de la empresa"
-                            value="<?= htmlspecialchars($formData['company_name'] ?? '') ?>" required>
-                    </div>
-                    <div class="field-group">
-                        <label class="field-label" for="company_nit">NIT / ID Fiscal</label>
-                        <input type="text" id="company_nit" name="company_nit" class="field-input"
-                            placeholder="900123456-1"
-                            value="<?= htmlspecialchars($formData['company_nit'] ?? '') ?>" required>
-                    </div>
-                </div>
-
+                <!-- Nombre completo -->
                 <div class="field-group">
                     <label class="field-label" for="full_name">Nombre Completo</label>
                     <input type="text" id="full_name" name="full_name" class="field-input"
                         placeholder="Tu nombre completo"
-                        value="<?= htmlspecialchars($formData['full_name'] ?? '') ?>" required>
+                        value="<?= htmlspecialchars($formData['full_name'] ?? '') ?>" required autocomplete="name">
                 </div>
 
-                <div class="form-row">
-                    <div class="field-group">
-                        <label class="field-label" for="email">Correo Corporativo</label>
-                        <input type="email" id="email" name="email" class="field-input"
-                            placeholder="tu@empresa.com"
-                            value="<?= htmlspecialchars($formData['email'] ?? '') ?>" required autocomplete="email">
-                    </div>
-                    <div class="field-group">
-                        <label class="field-label" for="department">Departamento</label>
-                        <select id="department" name="department" class="field-input" style="appearance:none;cursor:pointer;">
-                            <?php foreach (['Tecnología','Operaciones','Recursos Humanos','Finanzas','Ventas','Legal'] as $dep): ?>
-                            <option value="<?= $dep ?>" <?= ($formData['department'] ?? '') === $dep ? 'selected' : '' ?>><?= $dep ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                <!-- Email -->
+                <div class="field-group">
+                    <label class="field-label" for="email">Correo Electrónico</label>
+                    <input type="email" id="email" name="email" class="field-input"
+                        placeholder="tu@correo.com"
+                        value="<?= htmlspecialchars($formData['email'] ?? '') ?>" required autocomplete="email">
                 </div>
 
-                <div class="form-row">
-                    <div class="field-group">
-                        <label class="field-label" for="password">Contraseña</label>
-                        <input type="password" id="password" name="password" class="field-input"
-                            placeholder="Mín. 8 caracteres" required autocomplete="new-password">
-                        <div style="margin-top:6px;min-height:4px;border-radius:2px;background:var(--dash-border);overflow:hidden;">
-                            <div id="pwStrengthBar" style="height:4px;width:0;border-radius:2px;transition:all 0.3s;"></div>
+                <!-- Contraseña + requisitos -->
+                <div class="field-group" style="margin-bottom:8px;">
+                    <label class="field-label" for="password">Contraseña</label>
+                    <input type="password" id="password" name="password"
+                        class="field-input" placeholder="Crea tu contraseña"
+                        required autocomplete="new-password">
+
+                    <!-- Barra de fortaleza -->
+                    <div class="strength-track">
+                        <div class="strength-fill" id="strengthFill"></div>
+                    </div>
+
+                    <!-- Checklist de requisitos -->
+                    <div class="pw-rules" id="pwRules">
+                        <div class="pw-rule" id="rule-length">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Mínimo 8 caracteres</span>
+                        </div>
+                        <div class="pw-rule" id="rule-upper">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Una mayúscula</span>
+                        </div>
+                        <div class="pw-rule" id="rule-number">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Un número</span>
+                        </div>
+                        <div class="pw-rule" id="rule-special">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Un carácter especial</span>
                         </div>
                     </div>
-                    <div class="field-group">
-                        <label class="field-label" for="confirm_password">Confirmar Contraseña</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="field-input"
-                            placeholder="Repite tu contraseña" required autocomplete="new-password">
-                    </div>
                 </div>
 
-                <button type="submit" class="btn-primary btn-full" style="height:50px;margin-top:8px;">
+                <!-- Confirmar contraseña -->
+                <div class="field-group">
+                    <label class="field-label" for="confirm_password">Confirmar Contraseña</label>
+                    <input type="password" id="confirm_password" name="confirm_password"
+                        class="field-input" placeholder="Repite tu contraseña"
+                        required autocomplete="new-password">
+                    <div id="matchMsg" style="font-size:11.5px;margin-top:6px;min-height:16px;"></div>
+                </div>
+
+                <button type="submit" class="btn-primary btn-full" style="height:50px;margin-top:4px;">
                     Crear cuenta
                 </button>
             </form>
@@ -114,6 +167,7 @@
     </div>
 
     <script>
+    /* ── Toasts ── */
     function toast(t,ti,m){
         const ic={success:'fa-circle-check',error:'fa-circle-xmark'};
         const col={success:'var(--color-success)',error:'var(--color-danger)'};
@@ -123,20 +177,55 @@
         document.getElementById('toastBox').appendChild(e);
         setTimeout(()=>{e.classList.add('removing');setTimeout(()=>e.remove(),300)},6000);
     }
-    <?php $errs = AppSession::get('form_errors'); if($errs): foreach($errs as $e): ?>toast('error','Error','<?= addslashes($e) ?>');<?php endforeach; AppSession::remove('form_errors'); endif; ?>
+    <?php $errs = AppSession::get('form_errors'); if($errs): foreach($errs as $e): ?>
+    toast('error','Error','<?= addslashes($e) ?>');
+    <?php endforeach; AppSession::remove('form_errors'); endif; ?>
 
-    // Barra de fortaleza de contraseña
-    document.getElementById('password').addEventListener('input', function() {
-        const v = this.value, bar = document.getElementById('pwStrengthBar');
+    /* ── Validación de contraseña en tiempo real ── */
+    const pwInput   = document.getElementById('password');
+    const confInput = document.getElementById('confirm_password');
+    const fill      = document.getElementById('strengthFill');
+    const matchMsg  = document.getElementById('matchMsg');
+
+    const rules = {
+        length:  { el: document.getElementById('rule-length'),  test: v => v.length >= 8 },
+        upper:   { el: document.getElementById('rule-upper'),   test: v => /[A-Z]/.test(v) },
+        number:  { el: document.getElementById('rule-number'),  test: v => /[0-9]/.test(v) },
+        special: { el: document.getElementById('rule-special'), test: v => /[^A-Za-z0-9]/.test(v) },
+    };
+
+    // Colores de la barra según fortaleza
+    const strengthColors = ['', '#EF4444', '#F59E0B', '#F59E0B', '#22C55E'];
+
+    pwInput.addEventListener('input', function () {
+        const v = this.value;
         let score = 0;
-        if (v.length >= 8) score++;
-        if (/[A-Z]/.test(v)) score++;
-        if (/[0-9]/.test(v)) score++;
-        if (/[^A-Za-z0-9]/.test(v)) score++;
-        const colors = ['','#EF4444','#F59E0B','#22C55E','#A855F7'];
-        bar.style.width = (score * 25) + '%';
-        bar.style.background = colors[score] || '';
+
+        for (const [, rule] of Object.entries(rules)) {
+            const ok = rule.test(v);
+            rule.el.classList.toggle('ok', ok);
+            if (ok) score++;
+        }
+
+        // Barra de fortaleza
+        fill.style.width  = (score * 25) + '%';
+        fill.style.background = strengthColors[score] || '';
+
+        checkMatch();
     });
+
+    confInput.addEventListener('input', checkMatch);
+
+    function checkMatch() {
+        const pw   = pwInput.value;
+        const conf = confInput.value;
+        if (!conf) { matchMsg.textContent = ''; return; }
+        if (pw === conf) {
+            matchMsg.innerHTML = '<span style="color:var(--color-success);"><i class="fa-solid fa-check"></i> Las contraseñas coinciden</span>';
+        } else {
+            matchMsg.innerHTML = '<span style="color:var(--color-danger);"><i class="fa-solid fa-xmark"></i> Las contraseñas no coinciden</span>';
+        }
+    }
     </script>
 </body>
 </html>

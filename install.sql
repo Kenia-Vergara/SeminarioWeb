@@ -80,8 +80,8 @@ INSERT INTO users (
 ) VALUES (
     'Apex Solutions',
     '900123456-1',
-    'Dylan Burguillos',
-    'burguillosdylan@gmail.com',
+    'Kenia Tafur',
+    'keniatafur2005@gmail.com',
     '$2y$12$gJTBj2JxRWmNwKrA86uHMe3zMchznL3MOY6SBUMugFjfW1aLDCAh6', -- Admin@2026 BCRYPT Hash
     'admin',
     'Tecnología',

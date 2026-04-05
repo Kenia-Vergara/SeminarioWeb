@@ -114,16 +114,16 @@ class AuthController {
             exit;
         }
         $d = [
-            'company_name' => $_POST['company_name'] ?? '',
-            'company_nit' => $_POST['company_nit'] ?? '',
-            'full_name' => $_POST['full_name'] ?? '',
-            'email' => $_POST['email'] ?? '',
-            'password' => $_POST['password'] ?? '',
-            'confirm' => $_POST['confirm_password'] ?? '',
-            'department' => $_POST['department'] ?? '',
+            'company_name' => APP_NAME,
+            'company_nit'  => 'N/A',
+            'full_name'    => $_POST['full_name']         ?? '',
+            'email'        => $_POST['email']             ?? '',
+            'password'     => $_POST['password']          ?? '',
+            'confirm'      => $_POST['confirm_password']  ?? '',
+            'department'   => null,
         ];
         $errs = [];
-        foreach (['company_name', 'company_nit', 'full_name', 'email', 'password', 'department'] as $f) {
+        foreach (['full_name', 'email', 'password'] as $f) {
             if (empty($d[$f])) {
                 $errs[] = 'Todos los campos son obligatorios.';
                 break;
